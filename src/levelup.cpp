@@ -28,7 +28,7 @@ public:
     }
     void OnLevelChanged(Player* player, uint8 oldLevel) override {
 
-        if (sConfigMag->GetOption<bool>("levelup.Enable", true)) {
+        if (sConfigMgr->GetOption<bool>("levelup.Enable", true)) {
 
             QueryResult result = WorldDatabase.Query("SELECT entry FROM item_template");
 
