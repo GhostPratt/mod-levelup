@@ -12,6 +12,7 @@ using namespace std;
 #include "Player.h"
 #include "Config.h"
 #include "Chat.h"
+#include "Configuration/Config.h"
 
 using namespace Acore::ChatCommands;
 
@@ -25,48 +26,46 @@ public:
     {
 
     }
-    void OnLevelChanged(Player* player, uint8 oldLevel) override
-    {
+    void OnLevelChanged(Player* player, uint8 oldLevel) override {
 
-        QueryResult result = WorldDatabase.Query("SELECT entry FROM item_template");
+        if (sConfigMag->GetOption<bool>("levelup.Enable", true)) {
 
-        list<int> itemlist;
-        if (result)
-        {
-            do
-            {
-                int entry = result->Fetch()[0].Get<uint32>();
-                itemlist.emplace_back(entry);
-            } while (result->NextRow());
+            QueryResult result = WorldDatabase.Query("SELECT entry FROM item_template");
+
+            list<int> itemlist;
+            if (result) {
+                do {
+                    int entry = result->Fetch()[0].Get<uint32>();
+                    itemlist.emplace_back(entry);
+                } while (result->NextRow());
+            }
+
+            int size = itemlist.size();
+            random_device rd;
+            mt19937 gen(rd());
+            uniform_int_distribution<> distr(0, size);
+            auto itemlistFront = itemlist.begin();
+            advance(itemlistFront, distr(gen));
+            int item = *itemlistFront;
+
+            QueryResult stackResult = WorldDatabase.Query("SELECT stackable FROM item_template as t WHERE t.entry = " +
+                                                          to_string(item));
+
+            list<int> stackList;
+            if (stackResult) {
+                do {
+                    int entry = stackResult->Fetch()[0].Get<uint32>();
+                    stackList.emplace_back(entry);
+                } while (stackResult->NextRow());
+            }
+            auto stacklistFront = stackList.begin();
+            int stackSize = *stacklistFront;
+
+            player->AddItem(item, stackSize);
+
+            return;
+
         }
-
-        int size = itemlist.size();
-        random_device rd;
-        mt19937 gen(rd());
-        uniform_int_distribution<> distr(0, size);
-        auto itemlistFront = itemlist.begin();
-        advance(itemlistFront, distr(gen));
-        int item = *itemlistFront;
-
-        QueryResult stackResult = WorldDatabase.Query("SELECT stackable FROM item_template as t WHERE t.entry = " +
-                                                      to_string(item));
-
-        list<int> stackList;
-        if (stackResult)
-        {
-            do
-            {
-                int entry = stackResult->Fetch()[0].Get<uint32>();
-                stackList.emplace_back(entry);
-            } while (stackResult->NextRow());
-        }
-        auto stacklistFront = stackList.begin();
-        int stackSize = *stacklistFront;
-
-        player->AddItem(item, stackSize);
-
-        return;
-
     }
 };
 
